@@ -3,6 +3,7 @@
 ## Module description
 - Receive using circular DMA mode (non-blocking)
 - Transmit using polling mode (blocking)
+- Optional stdout locking mechanism
 
 #### **`main.c`**
 ```c
@@ -29,7 +30,7 @@ int main(void)
     MX_USART1_UART_Init();
   
     /* Initialize serial layer */  
-    serial_init(&huart1);
+    serial_init(&huart1, NULL);
     serial_start(stdin_reader, u8_buffer, sizeof(u8_buffer));
 
     /* simulate in-direct stdout */

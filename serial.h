@@ -12,12 +12,14 @@
 
 /* Exported types
  * --------------------------------------------*/
-typedef void (*serial_reader_t)(uint8_t *buffer, uint16_t size);
+typedef void (*stdout_locker_t)(uint8_t u8_lock);
+typedef void (*stdin_reader_t)(uint8_t *buffer, uint16_t size);
 
 typedef struct
 {
 	UART_HandleTypeDef *huart;
-	serial_reader_t reader;
+	stdout_locker_t locker;
+	stdin_reader_t reader;
 	struct {
 		uint8_t* buffer;
 		uint16_t size;
@@ -27,8 +29,8 @@ typedef struct
 
 /* Public function prototypes
  * --------------------------------------------*/
-void serial_init(UART_HandleTypeDef *uart);
-HAL_StatusTypeDef serial_start(serial_reader_t reader, uint8_t *buffer,
+void serial_init(UART_HandleTypeDef *p_uart, stdout_locker_t locker);
+HAL_StatusTypeDef serial_start(stdin_reader_t reader, uint8_t *buffer,
 	uint16_t size);
 HAL_StatusTypeDef serial_stop(void);
 void serial_write(void *p_buffer, uint16_t size);

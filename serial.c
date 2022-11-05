@@ -12,40 +12,39 @@ static serial_t hserial;
 
 /* Private function prototypes
  * --------------------------------------------*/
-static HAL_StatusTypeDef serial_listen(void);
+static void stdout_lock(uint8_t u8_lock);
+static HAL_StatusTypeDef stdin_listen(void);
 static void check_buffer(uint16_t new);
 static void fill_buffer(uint16_t pos, uint16_t size);
 
 /* Public function implementations
  * --------------------------------------------*/
-void serial_init(UART_HandleTypeDef *uart)
+void serial_init(UART_HandleTypeDef *p_uart, stdout_locker_t locker)
 {
-	hserial.huart = uart;
+	/* set properties */
+	hserial.huart = p_uart;
+	hserial.locker = locker;
 
+	/* Enable interrupts */
+	__HAL_UART_ENABLE_IT(p_uart, UART_IT_IDLE);
+	__HAL_DMA_ENABLE_IT(p_uart->hdmarx, DMA_IT_TC);
+	__HAL_DMA_ENABLE_IT(p_uart->hdmarx, DMA_IT_HT);
+
+	/* initialize stdout */
 	stdout_init();
 }
 
-HAL_StatusTypeDef serial_start(serial_reader_t rdr, uint8_t *buffer,
+HAL_StatusTypeDef serial_start(stdin_reader_t rdr, uint8_t *buffer,
 	uint16_t size)
 {
-	DMA_HandleTypeDef *p_dmarx;
-	HAL_StatusTypeDef status;
-
 	/* set properties */
 	hserial.reader = rdr;
 	hserial.rx.buffer = buffer;
 	hserial.rx.size = size;
 	hserial.rx.pos = 0;
 
-	/* Enable interrupts */
-	p_dmarx = hserial.huart->hdmarx;
-	__HAL_UART_ENABLE_IT(hserial.huart, UART_IT_IDLE);
-	__HAL_DMA_ENABLE_IT(p_dmarx, DMA_IT_TC);
-	__HAL_DMA_ENABLE_IT(p_dmarx, DMA_IT_HT);
-
 	/* Start receiving UART in DMA mode */
-	status = serial_listen();
-	return (status);
+	return (stdin_listen());
 }
 
 HAL_StatusTypeDef serial_stop(void)
@@ -58,7 +57,9 @@ HAL_StatusTypeDef serial_stop(void)
 
 void serial_write(void *p_buffer, uint16_t size)
 {
-    HAL_UART_Transmit(hserial.huart, (uint8_t*)p_buffer, size, HAL_MAX_DELAY);
+	stdout_lock(1);
+	HAL_UART_Transmit(hserial.huart, (uint8_t*)p_buffer, size, HAL_MAX_DELAY);
+	stdout_lock(0);
 }
 
 void serial_irq_dma(void)
@@ -88,7 +89,7 @@ void serial_irq_dma(void)
 		__HAL_DMA_CLEAR_FLAG(p_dmarx, __HAL_DMA_GET_FE_FLAG_INDEX(p_dmarx));
 		__HAL_DMA_CLEAR_FLAG(p_dmarx, __HAL_DMA_GET_DME_FLAG_INDEX(p_dmarx));
 
-		serial_listen();
+		stdin_listen();
 	}
 }
 
@@ -107,7 +108,15 @@ void serial_irq_uart(void)
 
 /* Private function implementations
  * --------------------------------------------*/
-static HAL_StatusTypeDef serial_listen(void)
+static void stdout_lock(uint8_t u8_lock)
+{
+	if (NULL != hserial.locker)
+	{
+		hserial.locker(u8_lock);
+	}
+}
+
+static HAL_StatusTypeDef stdin_listen(void)
 {
 	HAL_StatusTypeDef status;
 
