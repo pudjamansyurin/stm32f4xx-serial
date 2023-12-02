@@ -13,10 +13,10 @@
 extern UART_HandleTypeDef huart1;
 
 /* Private variables */
-static uint8_t u8_buffer[256];
+static uint8_t u8_buf[256];
 
 /* Private function definitions */
-static void stdin_reader(uint8_t *u8p_buffer, uint16_t u16_size)
+static void stdin_reader(uint8_t *u8p_buf, uint16_t u16_size)
 {
     /* do something with received data */
 }
@@ -31,7 +31,7 @@ int main(void)
   
     /* Initialize serial layer */  
     serial_init(&huart1, NULL);
-    serial_start(stdin_reader, u8_buffer, sizeof(u8_buffer));
+    serial_start(stdin_reader, u8_buf, sizeof(u8_buf));
 
     /* simulate in-direct stdout */
     printf("Hello World\n");

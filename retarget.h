@@ -8,7 +8,16 @@
 #ifndef STM32F4XX_SERIAL_RETARGET_H_
 #define STM32F4XX_SERIAL_RETARGET_H_
 
-/* Public function declaration */
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
+/* Public function declaration
+ * ---------------------------------------------------------------------------*/
 void stdout_init(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* STM32F4XX_SERIAL_RETARGET_H_ */
